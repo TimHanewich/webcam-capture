@@ -56,36 +56,41 @@ namespace WebcamCapture
                     UpdateStatus("Camera '" + cam.Name + "' reached time.");
                     UpdateStatus("Downloading from camera '" + cam.Name + "'...");
 
-                    Stream s = await cam.DownloadAsync();
-                    UpdateStatus("Downloaded with " + s.Length.ToString() + " bytes");
-
-                    //Is it new?
-                    bool is_new = cam.IsNew(s);
-                    if (is_new)
+                    try
                     {
-                        UpdateStatus("It is a new image for '" + cam.Name + "'!");
+                        Stream s = await cam.DownloadAsync();
+                        UpdateStatus("Downloaded with " + s.Length.ToString() + " bytes");
 
-                        //set last received
-                        cam.SetLastReceived(s);
-                        s.Seek(0, SeekOrigin.Begin);
+                        //Is it new?
+                        bool is_new = cam.IsNew(s);
+                        if (is_new)
+                        {
+                            UpdateStatus("It is a new image for '" + cam.Name + "'!");
 
-                        //Save to file
-                        string directory = System.IO.Path.Combine(RootDirectory, cam.Name);
-                        string new_file_path = System.IO.Path.Combine(directory, new HanewichTimeStamp(DateTime.UtcNow).ToString() + ".jpg");
-                        Stream new_file = System.IO.File.Create(new_file_path);
-                        s.CopyTo(new_file);
-                        new_file.Close();
-                        s.Close();
+                            //set last received
+                            cam.SetLastReceived(s);
+                            s.Seek(0, SeekOrigin.Begin);
 
-                        //Print status
-                        UpdateStatus("Data from cam '" + cam.Name + "' written to '" + new_file_path + "'");
+                            //Save to file
+                            string directory = System.IO.Path.Combine(RootDirectory, cam.Name);
+                            string new_file_path = System.IO.Path.Combine(directory, new HanewichTimeStamp(DateTime.UtcNow).ToString() + ".jpg");
+                            Stream new_file = System.IO.File.Create(new_file_path);
+                            s.CopyTo(new_file);
+                            new_file.Close();
+                            s.Close();
+
+                            //Print status
+                            UpdateStatus("Data from cam '" + cam.Name + "' written to '" + new_file_path + "'");
+                        }
+                        else
+                        {
+                            UpdateStatus("Image for '" + cam.Name + "' was not new!");
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        UpdateStatus("Image for '" + cam.Name + "' was not new!");
-                    }
-
-                    
+                        UpdateStatus("FAILURE ENCOUNTERED ON CAM '" + cam.Name + "'! Msg: " + ex.Message);
+                    }  
                 }
             }
 
